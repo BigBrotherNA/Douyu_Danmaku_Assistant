@@ -43,51 +43,15 @@ def welcome():
     return cnt, rooms
 
 
-def get_room_info(cnt, rooms):
-    while True:
-        rid = raw_input(u'\033[1m请输入房间号或序号: \033[0m')
-        if rid in ('exit', 'quit'):
-            sys.exit()
-        elif rid.isdigit() and 0 < int(rid) <= cnt - 1:
-            rid = rooms[int(rid) - 1]['rid']
-
-        url = 'http://www.douyutv.com/' + rid
-        try:
-            page = urllib.urlopen(url).read()
-            room_info = re.search('var \$ROOM = (.+);', page).group(1)
-            auth_servers = re.search('\"server_config\":\"(.+)\",\"', page).group(1)
-            auth_servers = urllib.unquote_plus(auth_servers)
-            auth_servers = json.loads(auth_servers)
-            # auth_host, auth_port = auth_servers[0]['ip'], auth_servers[0]['port']
-            room_info = json.loads(room_info)
-            rid = room_info['room_id']
-            rname = room_info['room_name']
-            oname = room_info['owner_name']
-            category = room_info['cate_name']
-            return auth_servers, rid, rname, oname, category
-        except:
-            print u'\033[1;31m[错误]请输入正确的房间号\033[0m'
-
-
 class DouyuDanmakuClient:
-    def __init__(self, auth_server, rid, rname, oname, category):
-        # self.auth_host = auth_host
-        # self.auth_port = auth_port
-        self.auth_server = auth_server
+    def __init__(self, cnt, rooms):
+        self.devid, self.gid, self.rid, self.rt, self.username, self.vk = None, None, None, None, None, None
+        self.cnt = cnt
+        self.rooms = rooms
         self.danmaku_host = '111.161.35.131'
         self.danmaku_port = 8601
-        self.rid = rid
-        self.gid = None
-        self.rt = None
-        self.vk = None
-        self.username = None
-        self.rname = rname
-        self.oname = oname
-        self.devid = None
-        self.catagory = category
         self.danmaku_auth_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.danmaku_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.danmaku_auth_socket.connect((self.auth_server['ip'], int(self.auth_server['port'])))
         self.danmaku_socket.connect((self.danmaku_host, self.danmaku_port))
 
     def run(self):
@@ -98,15 +62,41 @@ class DouyuDanmakuClient:
         self.get_danmaku()
 
     def login(self):
-        self.send_auth_loginreq_msg()
-        response = self.danmaku_auth_socket.recv(65535)
-        self.username = re.search('\/username@=(.+)\/nickname', response).group(1)
-        response = self.danmaku_auth_socket.recv(65535)
-        self.gid = re.search('\/gid@=(\d+)\/', response).group(1)
-        self.send_qrl_msg()
-        response = self.danmaku_auth_socket.recv(65535)
-        self.send_auth_keeplive_msg()
-        # response = self.danmaku_auth_socket.recv(65535)
+        while True:
+            self.rid = raw_input(u'\033[1m请输入房间号或序号: \033[0m')
+            if self.rid in ('exit', 'quit'):
+                sys.exit()
+            elif self.rid.isdigit() and 0 < int(self.rid) <= self.cnt - 1:
+                self.rid = self.rooms[int(self.rid) - 1]['rid']
+
+            url = 'http://www.douyutv.com/' + self.rid
+            try:
+                page = urllib.urlopen(url).read()
+                room_info = re.search('var \$ROOM = (.+);', page).group(1)
+                auth_servers = re.search('\"server_config\":\"(.+)\",\"', page).group(1)
+                auth_servers = urllib.unquote_plus(auth_servers)
+                auth_servers = json.loads(auth_servers)
+                # auth_host, auth_port = auth_servers[0]['ip'], auth_servers[0]['port']
+                room_info = json.loads(room_info)
+                self.rid = room_info['room_id']
+                self.danmaku_auth_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.danmaku_auth_socket.connect((auth_servers[0]['ip'], int(auth_servers[0]['port'])))
+                self.send_auth_loginreq_msg()
+                response = self.danmaku_auth_socket.recv(65535)
+                if re.search('\/live_stat@=(.+?)\/is_illegal', response).group(1) == '0':
+                    print u'\033[1;31m[错误] 啊哦,主播正在赶来的路上,先去其他的房间打个酱油吧...\033[0m'
+                    continue
+                else:
+                    self.username = re.search('\/username@=(.+)\/nickname', response).group(1)
+                    response = self.danmaku_auth_socket.recv(65535)
+                    self.gid = re.search('\/gid@=(\d+)\/', response).group(1)
+                    self.send_qrl_msg()
+                    response = self.danmaku_auth_socket.recv(65535)
+                    self.send_auth_keeplive_msg()
+                    # response = self.danmaku_auth_socket.recv(65535)
+                    break
+            except:
+                print u'\033[1;31m[错误] 请输入正确的房间号\033[0m'
 
     def get_danmaku(self):
         self.send_loginreq_msg()
@@ -183,6 +173,8 @@ class DouyuDanmakuClient:
                 print response
             elif dtype == 'ggbb':
                 print response
+            elif dtype == 'donateres':
+                print response
             elif dtype == 'chatmsg':
                 nickname = re.search('\/nn@=(.+?)\/', response).group(1)
                 chatmsg = re.search('\/txt@=(.+?)\/', response).group(1)
@@ -242,7 +234,5 @@ class DouyuDanmakuClient:
 
 if __name__ == '__main__':
     rnumber, rooms = welcome()
-    # room_url = 'http://www.douyutv.com/' + rid
-    auth_servers, rid, rname, oname, category = get_room_info(rnumber, rooms)
-    client = DouyuDanmakuClient(auth_servers[0], rid, rname, oname, category)
+    client = DouyuDanmakuClient(rnumber, rooms)
     client.run()
