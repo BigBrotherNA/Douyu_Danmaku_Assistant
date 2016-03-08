@@ -120,7 +120,7 @@ class DouyuDanmakuClient:
                 limittime, administrator, nickname = re.search('\/limittime@=(.+)\/snick@=(.+?)/dnick(.+?)\/', response).groups()
                 print '\033[1;36m[信息]\033[0m \033[1m用户\033[0m \033[1;33m%s\033[0m \033[1m被管理员\033[0m \033[1;31m%s\033[0m \033[1m禁言%s小时\033[0m' % (nickname, administrator, int(limittime) / 3600)
             elif dtype == 'uenter':
-                nickname = re.search('\/nn@=(.+?)\/')
+                nickname = re.search('\/nn@=(.+?)\/', response).group(1)
                 level = re.search('\/level@=(.+?)\/', response).group(1)
                 print '\033[1;36m[信息]\033[0m \033[1m用户\033[0m \033[1;32m[LV %s]\033[0m \033[1;33m%s\033[0m \033[1m进入房间\033[0m' % (level, nickname)
             elif dtype == 'userenter':
@@ -151,6 +151,8 @@ class DouyuDanmakuClient:
                     print '\033[1;36m[信息]\033[0m \033[1m用户\033[0m \033[1;32m[LV %s]\033[0m \033[1;33m%s\033[0m \033[1m送给主播%s个鱼丸,\033[0m \033[1;31m%s连击\033[0m' % (level, nickname, int(number) * 520, hits)
                 elif gfid == '52':
                     print '\033[1;36m[信息]\033[0m \033[1m用户\033[0m \033[1;32m[LV %s]\033[0m \033[1;33m%s\033[0m \033[1m送给主播%s个666,\033[0m \033[1;31m%s连击\033[0m' % (level, nickname, number, hits)
+                if gfid == '143':
+                    print '\033[1;36m[信息]\033[0m \033[1m用户\033[0m \033[1;32m[LV %s]\033[0m \033[1;33m%s\033[0m \033[1m送给主播%s个水晶鞋,\033[0m \033[1;31m%s连击\033[0m' % (level, nickname, number, hits)
                 else:
                     print '\033[1;36m[信息]\033[0m \033[1m用户\033[0m \033[1;32m[LV %s]\033[0m \033[1;33m%s\033[0m \033[1m送给主播%s个不知啥礼物,\033[0m \033[1;31m%s连击\033[0m' % (level, nickname, number, hits)
                     print response
