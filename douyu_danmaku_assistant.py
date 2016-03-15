@@ -14,7 +14,7 @@ import time
 import sys
 import re
 
-__author__ = 'jingqiwang'
+__author__ = 'JingqiWang'
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
